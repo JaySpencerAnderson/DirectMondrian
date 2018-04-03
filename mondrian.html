@@ -1,0 +1,250 @@
+<html>
+<head><title>Mondrian Art Puzzle - Direct Solution</title>
+<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1"> 
+</head>
+<body>
+<table>
+<tr>
+<td><canvas id="mondrian" width="512" height="512" style="border:1px solid #000000;"></canvas></td>
+<td id="right"></td>
+</tr>
+</table>
+<script>
+	var canvas = document.getElementById("mondrian");
+	var ctx = canvas.getContext("2d");
+	var width=512;
+	var colorScheme=0;
+	var colorStart=0;
+	var colorIncrement=1;
+	var colors;
+	var rectangle=[];
+	var nRectangles=2;
+	var size=120;
+	var scale=4;
+
+	function differentColorScheme(c){
+		switch(c){
+		case 0:
+// Angry Fruit Salad
+			colors=["#FF0000","#00FF00","#0000FF","#FFFF00","#00FFFF"];
+			break;
+		case 1:
+// 1950s cartoons
+			colors=["#333333","#555555","#777777","#999999","#BBBBBB"];
+			break;
+		case 2:
+// Earth tones
+			colors=["#330000","#441100","#552211","#551122","#440011"];
+			break;
+		case 3:
+// red monochrome
+			colors=["#330000","#660000","#990000","#CC0000","#FF0000"];
+			break;
+		case 4:
+// My wardrobe
+			colors=["#663300","#444411","#336600","#006633","#003366"];
+			break;
+		case 5:
+// green monochrome
+			colors=["#003300","#006600","#009900","#00CC00","#00FF00"];
+			break;
+		case 6:
+// Just the opposite - pastels
+			colors=["#99CCFF","#BBBBEE","#CC99FF","#FF99CC","#FFCC99"];
+			break;
+		case 7:
+		default:
+// blue monochrome
+			colors=["#000033","#000066","#000099","#0000CC","#0000FF"];
+			break;
+		}
+	}
+	function draw(size,scale){
+
+		var mn=rectangle[0].width*rectangle[0].height;
+		var mx=mn;
+		ctx.fillStyle="#FFFFFF";
+		ctx.fillRect(0,0,width,width);
+
+		for(var i=0;i<rectangle.length;i++){
+			ctx.fillStyle=colors[rectangle[i].color];
+			ctx.fillRect(
+				rectangle[i].x*scale,
+				rectangle[i].y*scale,
+				rectangle[i].width*scale,
+				rectangle[i].height*scale);
+			var area=rectangle[i].width*rectangle[i].height;
+			if(area < mn){
+				mn=area;
+			}
+			if(area > mx){
+				mx=area;
+			}
+			for(var j=0;j<i;j++){
+				if((rectangle[i].width == rectangle[j].width && rectangle[i].height == rectangle[j].height)
+				|| (rectangle[i].width == rectangle[j].height && rectangle[i].height == rectangle[j].width)){
+					console.log("Congruent rectangles - " + i + " and " + j + ": " + rectangle[i].width + " X " + rectangle[i].height);
+				}
+			}
+		}
+		rightTable(mx-mn);
+	}
+	function rightTable(score){
+		var head="<table><tr><th>Width</th><th>Height</th><th>Area</th></tr>";
+		var tail="</table>";
+
+		var body="";
+		for(var i=0;i<rectangle.length;i++){
+			body+="<tr><td>" + rectangle[i].width + "</td><td>" + rectangle[i].height + "</td><td>" + rectangle[i].width*rectangle[i].height + "</tr>";
+		}
+		var scorehtml="Score: " + score + ", Rectangles: " + rectangle.length;
+		var tbl = document.getElementById("right").innerHTML=head + body + tail + scorehtml;
+	}
+	function init(){
+		rectangle=[];
+	}
+	function moreRectangles(){
+		nRectangles++;
+		init();
+		mondrian(nRectangles,size);
+		draw(size,scale);
+	}
+	function fewerRectangles(){
+		if(nRectangles > 2){
+			nRectangles--
+		}
+		init();
+		mondrian(nRectangles,size);
+		draw(size,scale);
+	}
+	function changeColor(){
+		colorScheme=(colorScheme+1)%8;
+		differentColorScheme(colorScheme);
+		draw(size,scale);
+	}
+	function shuffleColor(){
+		colorStart=(colorStart+1)%colors.length;
+		colorIncrement++;
+		if(colorIncrement == colors.length){
+			colorIncrement=1;
+		}
+		init();
+		mondrian(nRectangles,size);
+		draw(size,scale);
+	}
+	function mondrian(n,size){
+// mondrian is recursive.  Check to see if the rectangle array is empty.  
+// If so, populate first entry (as though it is the only entry).
+		if(rectangle.length < 1){
+			rectangle.push({
+				x: 0, 
+				y: 0, 
+				width: size, 
+				height: size, 
+				color: colorStart});
+		}
+		if(n > 1){
+// If n is greater than 1, we have to split the area of the last rectangle between it and the remaining rectangles.
+			var last=rectangle.length-1;
+// Type is just used to generate the orientation (top, right, bottom or left side of the remaining space) of the 
+//  next rectangle.
+			var type=(nRectangles-n)&3;
+			switch(type){
+			case 0:
+			case 2:
+				remainder=Math.round(rectangle[last].height - (rectangle[last].height/n));
+				if(rectangle[last].height - remainder > 0){
+					rectangle[last].height-=remainder;
+					if(last > 0
+					&& rectangle[last].height == rectangle[last-1].width
+					&& rectangle[last].width == rectangle[last-1].height){
+						console.log("Adjusted");
+						rectangle[last].height++;
+						remainder--;
+					}
+					else if(rectangle[last].height == remainder){
+						rectangle[last].height++;
+						remainder--;
+					}
+					if(type == 0){
+						rectangle.push({
+							x: rectangle[last].x,
+							y: rectangle[last].y+rectangle[last].height, 
+							width: rectangle[last].width, 
+							height: remainder,
+							color: (rectangle[last].color+colorIncrement)%colors.length});
+					}
+					else {
+						rectangle[last].y+=remainder;
+						rectangle.push({
+							x: rectangle[last].x,
+							y: rectangle[last].y-remainder,
+							width: rectangle[last].width, 
+							height: remainder,
+							color: (rectangle[last].color+colorIncrement)%colors.length});
+					}
+					mondrian(n-1,size);
+				}
+				break;
+			case 1:
+			case 3:
+				remainder=Math.round(rectangle[last].width - (rectangle[last].width/n));
+				if(rectangle[last].width - remainder > 0){
+					rectangle[last].width-=remainder;
+					if(last > 0
+					&& rectangle[last].height == rectangle[last-1].width
+					&& rectangle[last].width == rectangle[last-1].height){
+						console.log("Adjusted");
+						rectangle[last].height++;
+						remainder--;
+					}
+					else if(rectangle[last].width == remainder){
+						rectangle[last].width++;
+						remainder--;
+					}
+					if(type == 1){
+						rectangle.push({
+							x: rectangle[last].x+rectangle[last].width, 
+							y: rectangle[last].y, 
+							width: remainder, 
+							height: rectangle[last].height, 
+							color: (rectangle[last].color+colorIncrement)%colors.length});
+					}
+					else {
+						rectangle[last].x+=remainder;
+						rectangle.push({
+							x: rectangle[last].x-remainder, 
+							y: rectangle[last].y, 
+							width: remainder, 
+							height: rectangle[last].height, 
+							color: (rectangle[last].color+colorIncrement)%colors.length});
+					}
+					mondrian(n-1,size);
+				}
+				break;
+			}
+		}
+	}
+	init();
+	differentColorScheme(colorScheme);
+	mondrian(nRectangles,size);
+	draw(size,scale);
+</script><br>
+<table width=400>
+<tr>
+<td><button onclick="moreRectangles()" style="height:50px;width:80px;font-size:36px">+</button></td>
+<td><button onclick="fewerRectangles()" style="height:50px;width:80px;font-size:36px">-</button></td>
+<td><button onclick="changeColor()" style="height:50px;width:80px;font-size:36px">C</button></td>
+<td><button onclick="shuffleColor()" style="height:50px;width:80px;font-size:36px">c</button></td>
+</tr>
+</table>
+Direct method of a solution for the Mondrian Art Puzzle.
+<ul>
+<li>Click &quot;+&quot; to add rectangles.
+<li>Click &quot;-&quot; to remove rectangles.
+<li>Click capital &quot;C&quot; to change the color scheme.
+<li>Click lower-case &quot;c&quot; to scramble the color scheme (try it).
+<li>The score is the difference between the largest area and the smallest area of a rectangle.
+<li>The size of the overall square is fixed at 120.
+</ul>
+</body></html>
